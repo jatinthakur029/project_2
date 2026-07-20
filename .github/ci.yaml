@@ -1,0 +1,65 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > terraform/project_2key
+          chmod 600 terraform/project_2key
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/
+
+      - name: Terraform Format
+        run: terraform fmt -check
+        working-directory: terraform/
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform/
+
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: terraform/
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform/
+  jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Make deploy.sh executable
+        run: chmod +x Infrastructure\Terraform\Scripts\deploy.shdeploy.sh
+
+      - name: Make docker_install.sh executable
+        run: chmod +x Infrastructure\Terraform\Scripts\docker_install.sh
+
+      - name: Run Bash script for install docker
+        run: ./Infrastructure/Terraform/Scripts/docker_install.sh
+
+      - name: Run Bash script for deploy
+        run: ./Infrastructure/Terraform/Scripts/deploy.sh
+    
